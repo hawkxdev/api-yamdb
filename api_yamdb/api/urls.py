@@ -1,12 +1,15 @@
-"""Конфигурация URL для API v1."""
-
 from django.urls import include, path
-from rest_framework import routers
+from rest_framework.routers import DefaultRouter
 
-router = routers.DefaultRouter()
+from .views import CategoryViewSet, GenreViewSet, TitleViewSet
 
 app_name = 'api'
 
+router = DefaultRouter()
+router.register(r'categories', CategoryViewSet, basename='categories')
+router.register(r'genres', GenreViewSet, basename='genres')
+router.register(r'titles', TitleViewSet, basename='titles')
+
 urlpatterns = [
-    path('', include(router.urls)),
+    path('v1/', include(router.urls)),
 ]
