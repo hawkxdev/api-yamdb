@@ -1,5 +1,53 @@
+"""Модели приложения reviews."""
+
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.contrib.auth.models import AbstractUser
+
+
+class User(AbstractUser):
+    """Кастомная модель пользователя."""
+
+    ROLE_CHOICES = [
+        ('user', 'Пользователь'),
+        ('moderator', 'Модератор'),
+        ('admin', 'Администратор'),
+    ]
+
+    bio = models.TextField(
+        'Биография',
+        blank=True,
+        help_text='Расскажите о себе'
+    )
+    role = models.CharField(
+        'Роль',
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='user',
+        help_text='Роль пользователя'
+    )
+    confirmation_code = models.CharField(
+        'Код подтверждения',
+        max_length=255,
+        blank=True,
+        help_text='Код для подтверждения email'
+    )
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+        ordering = ('username',)
+
+    def __str__(self) -> str:
+        return self.username
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == 'admin' or self.is_superuser
+
+    @property
+    def is_moderator(self) -> bool:
+        return self.role == 'moderator'
 
 
 class Category(models.Model):
