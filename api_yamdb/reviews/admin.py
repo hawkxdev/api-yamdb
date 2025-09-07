@@ -14,7 +14,6 @@ class TitleAdmin(admin.ModelAdmin):
     list_filter = ('category', 'year', 'genre')
     search_fields = ('name', 'category__name', 'genre__name')
     inlines = [GenreTitleInline]
-    # ✅ Добавляем быстрый редактор года и категории
     list_editable = ('year', 'category')  # ← ДОБАВЛЕНО
 
     def display_genre(self, obj):
@@ -37,7 +36,6 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ('name',)
     search_fields = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
-    # ✅ Добавляем быстрый редактор slug
     list_editable = ('slug',)  # ← ДОБАВЛЕНО
 
 
@@ -47,7 +45,6 @@ class GenreAdmin(admin.ModelAdmin):
     list_filter = ('name',)
     search_fields = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
-    # ✅ Добавляем быстрый редактор slug
     list_editable = ('slug',)  # ← ДОБАВЛЕНО
 
 
