@@ -1,9 +1,21 @@
+"""API сериализаторы."""
+
+import re
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from reviews.models import Category, Genre, Title
 
+
 User = get_user_model()
+
+USERNAME_PATTERN = r'^[\w.@+-]+\Z'
+USERNAME_ERROR = (
+    'Username может содержать только буквы, '
+    'цифры и символы @, ., +, -, _'
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -52,60 +64,54 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
 class SignUpSerializer(serializers.Serializer):
     """Регистрация пользователя."""
-    
+
     email = serializers.EmailField(max_length=254)
     username = serializers.CharField(max_length=150)
-    
-    def validate_username(self, value):
+
+    def validate_username(self, value: str) -> str:
         """Валидация username."""
         if value.lower() == 'me':
             raise serializers.ValidationError(
                 "Использовать имя 'me' в качестве username запрещено."
             )
-        
-        import re
-        if not re.match(r'^[\w.@+-]+\Z', value):
-            raise serializers.ValidationError(
-                "Username может содержать только буквы, цифры и символы @, ., +, -, _"
-            )
-        
+
+        if not re.match(USERNAME_PATTERN, value):
+            raise serializers.ValidationError(USERNAME_ERROR)
+
         return value
-    
-    def validate(self, data):
+
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         """Проверка уникальности."""
         email = data.get('email')
         username = data.get('username')
-        
+
         if User.objects.filter(email=email).exclude(username=username).exists():
             raise serializers.ValidationError({
                 'email': 'Пользователь с таким email уже существует.'
             })
-        
+
         if User.objects.filter(username=username).exclude(email=email).exists():
             raise serializers.ValidationError({
                 'username': 'Пользователь с таким username уже существует.'
             })
-        
+
         return data
 
 
 class TokenSerializer(serializers.Serializer):
     """Получение JWT токена."""
-    
+
     username = serializers.CharField(max_length=150)
     confirmation_code = serializers.CharField(write_only=True)
-    
-    def validate_username(self, value):
-        """Проверка паттерна."""
-        import re
-        if not re.match(r'^[\w.@+-]+\Z', value):
-            raise serializers.ValidationError(
-                "Username может содержать только буквы, цифры и символы @, ., +, -, _"
-            )
+
+    def validate_username(self, value: str) -> str:
+        """Валидация username."""
+        if not re.match(USERNAME_PATTERN, value):
+            raise serializers.ValidationError(USERNAME_ERROR)
         return value
 
 
 class TokenResponseSerializer(serializers.Serializer):
     """Ответ с токеном."""
-    
+
     token = serializers.CharField()

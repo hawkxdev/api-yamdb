@@ -4,6 +4,8 @@ import secrets
 
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django.http import HttpRequest
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import mixins, status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
@@ -12,7 +14,8 @@ from rest_framework.views import APIView
 from reviews.models import Category, Genre, Title
 from .serializers import (
     CategorySerializer, GenreSerializer, SignUpSerializer,
-    TitleCreateSerializer, TitleSerializer
+    TitleCreateSerializer, TitleSerializer, TokenSerializer,
+    TokenResponseSerializer
 )
 
 
@@ -53,7 +56,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class SignUpView(APIView):
     """Регистрация пользователя."""
 
-    def post(self, request):
+    def post(self, request: HttpRequest) -> Response:
         """POST метод регистрации."""
         serializer = SignUpSerializer(data=request.data)
 
@@ -61,7 +64,7 @@ class SignUpView(APIView):
             email = serializer.validated_data['email']
             username = serializer.validated_data['username']
 
-            confirmation_code = secrets.token_hex(16)
+            confirmation_code = secrets.token_hex(16)  # 32 символа
 
             user, created = User.objects.get_or_create(
                 username=username,
@@ -91,6 +94,46 @@ class SignUpView(APIView):
 
             return Response(
                 {'email': email, 'username': username},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TokenView(APIView):
+    """Получение JWT токена."""
+
+    def post(self, request: HttpRequest) -> Response:
+        """POST метод получения токена."""
+        serializer = TokenSerializer(data=request.data)
+
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            confirmation_code = serializer.validated_data['confirmation_code']
+
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return Response(
+                    {'detail': 'Пользователь не найден.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if user.confirmation_code != confirmation_code:
+                return Response(
+                    {'detail': 'Неверный код подтверждения.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+
+            response_data = {'token': access_token}
+            response_serializer = TokenResponseSerializer(data=response_data)
+            response_serializer.is_valid()
+
+            return Response(
+                response_serializer.data,
                 status=status.HTTP_200_OK
             )
 
