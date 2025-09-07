@@ -1,9 +1,22 @@
-from rest_framework import viewsets, mixins
+"""API представления."""
+
+import secrets
+
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from rest_framework import mixins, status, viewsets
 from rest_framework.filters import SearchFilter
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from reviews.models import Category, Genre, Title
-from .serializers import (CategorySerializer, GenreSerializer,
-                          TitleSerializer, TitleCreateSerializer)
+from .serializers import (
+    CategorySerializer, GenreSerializer, SignUpSerializer,
+    TitleCreateSerializer, TitleSerializer
+)
+
+
+User = get_user_model()
 
 
 class CategoryViewSet(mixins.ListModelMixin,
@@ -35,3 +48,50 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update']:
             return TitleCreateSerializer
         return TitleSerializer
+
+
+class SignUpView(APIView):
+    """Регистрация пользователя."""
+
+    def post(self, request):
+        """POST метод регистрации."""
+        serializer = SignUpSerializer(data=request.data)
+
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            username = serializer.validated_data['username']
+
+            confirmation_code = secrets.token_hex(16)
+
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={'email': email}
+            )
+
+            if not created and user.email != email:
+                return Response(
+                    {
+                        'detail': (
+                            'Пользователь с таким username уже существует.'
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user.confirmation_code = confirmation_code
+            user.save()
+
+            send_mail(
+                subject='Код подтверждения YaMDb',
+                message=f'Ваш код подтверждения: {confirmation_code}',
+                from_email='noreply@yamdb.com',
+                recipient_list=[email],
+                fail_silently=False,
+            )
+
+            return Response(
+                {'email': email, 'username': username},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
