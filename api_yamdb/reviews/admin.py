@@ -14,6 +14,8 @@ class TitleAdmin(admin.ModelAdmin):
     list_filter = ('category', 'year', 'genre')
     search_fields = ('name', 'category__name', 'genre__name')
     inlines = [GenreTitleInline]
+    # ✅ Добавляем быстрый редактор года и категории
+    list_editable = ('year', 'category')  # ← ДОБАВЛЕНО
 
     def display_genre(self, obj):
         """
@@ -24,7 +26,7 @@ class TitleAdmin(admin.ModelAdmin):
 
         Returns:
             str: Строка с перечислением жанров
-    """
+        """
         return ', '.join([genre.name for genre in obj.genre.all()])
     display_genre.short_description = 'Жанры'
 
@@ -35,6 +37,8 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ('name',)
     search_fields = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
+    # ✅ Добавляем быстрый редактор slug
+    list_editable = ('slug',)  # ← ДОБАВЛЕНО
 
 
 @admin.register(Genre)
@@ -43,6 +47,8 @@ class GenreAdmin(admin.ModelAdmin):
     list_filter = ('name',)
     search_fields = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
+    # ✅ Добавляем быстрый редактор slug
+    list_editable = ('slug',)  # ← ДОБАВЛЕНО
 
 
 @admin.register(User)
@@ -63,3 +69,4 @@ class UserAdmin(BaseUserAdmin):
         'username', 'email', 'first_name', 'last_name', 'role', 'is_staff')
     list_filter = ('role', 'is_staff', 'is_superuser', 'is_active')
     search_fields = ('username', 'email', 'first_name', 'last_name')
+    list_editable = ('role',)
