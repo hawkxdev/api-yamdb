@@ -8,6 +8,7 @@ from django.http import HttpRequest
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import mixins, status, viewsets
 from rest_framework.filters import SearchFilter
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -56,6 +57,8 @@ class TitleViewSet(viewsets.ModelViewSet):
 class SignUpView(APIView):
     """Регистрация пользователя."""
 
+    permission_classes = [AllowAny]
+
     def post(self, request: HttpRequest) -> Response:
         """POST метод регистрации."""
         serializer = SignUpSerializer(data=request.data)
@@ -102,6 +105,8 @@ class SignUpView(APIView):
 
 class TokenView(APIView):
     """Получение JWT токена."""
+
+    permission_classes = [AllowAny]
 
     def post(self, request: HttpRequest) -> Response:
         """POST метод получения токена."""
