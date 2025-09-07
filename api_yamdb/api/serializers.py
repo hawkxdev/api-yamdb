@@ -58,6 +58,15 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'year', 'description', 'genre', 'category')
 
     def to_representation(self, instance):
+        """
+        Преобразует instance в словарь для сериализации.
+
+        Args:
+            instance: Объект Title для сериализации
+
+        Returns:
+            dict: Сериализованные данные
+        """
         serializer = TitleSerializer(instance)
         return serializer.data
 

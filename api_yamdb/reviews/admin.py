@@ -16,6 +16,15 @@ class TitleAdmin(admin.ModelAdmin):
     inlines = [GenreTitleInline]
 
     def display_genre(self, obj):
+        """
+        Отображает список жанров произведения в админке.
+
+        Args:
+            obj: Объект Title
+
+        Returns:
+            str: Строка с перечислением жанров
+    """
         return ', '.join([genre.name for genre in obj.genre.all()])
     display_genre.short_description = 'Жанры'
 

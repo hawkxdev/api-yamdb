@@ -9,7 +9,7 @@ class Command(BaseCommand):
         'категорий, жанров, произведений и их связей'
     )
 
-    def import_categories(self):
+    def import_categories(self) -> None:
         """Импорт категорий из CSV файла."""
         try:
             with open('static/data/category.csv', encoding='utf-8') as f:
@@ -101,7 +101,7 @@ class Command(BaseCommand):
                 self.style.ERROR(f'Ошибка при импорте связей жанров: {e}')
             )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options) -> None:
         """Основной метод выполнения команды."""
         self.stdout.write('Начинаем импорт данных...')
 
