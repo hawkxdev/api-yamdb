@@ -5,9 +5,9 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     CategoryViewSet, GenreViewSet, SignUpView,
-    TitleViewSet, TokenView
+    TitleViewSet, TokenView, ReviewViewSet,
+    CommentViewSet
 )
-
 
 app_name = 'api'
 
@@ -20,4 +20,32 @@ urlpatterns = [
     path('v1/', include(router_v1.urls)),
     path('v1/auth/signup/', SignUpView.as_view(), name='signup'),
     path('v1/auth/token/', TokenView.as_view(), name='token'),
+    path(
+        'v1/titles/<int:title_id>/reviews/',
+        ReviewViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='review-list',
+    ),
+    path(
+        'v1/titles/<int:title_id>/reviews/<int:pk>/',
+        ReviewViewSet.as_view({
+            'get': 'retrieve',
+            'patch': 'partial_update',
+            'delete': 'destroy',
+        }),
+        name='review-detail',
+    ),
+    path(
+        'v1/titles/<int:title_id>/reviews/<int:review_id>/comments/',
+        CommentViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='comment-list',
+    ),
+    path(
+        'v1/titles/<int:title_id>/reviews/<int:review_id>/comments/<int:pk>/',
+        CommentViewSet.as_view({
+            'get': 'retrieve',
+            'patch': 'partial_update',
+            'delete': 'destroy',
+        }),
+        name='comment-detail',
+    ),
 ]
