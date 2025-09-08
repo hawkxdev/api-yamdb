@@ -61,6 +61,17 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Оценка должна быть от 1 до 10.')
         return value
 
+    def validate(self, data):
+        request = self.context.get('request')
+        title_id = self.context['view'].kwargs.get('title_id')
+        user = request.user
+        if request.method == 'POST':
+            if Review.objects.filter(title_id=title_id, author=user).exists():
+                raise serializers.ValidationError(
+                    'Можно оставить только один отзыв на произведение!'
+                )
+        return data
+
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(

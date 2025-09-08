@@ -1,6 +1,8 @@
 from rest_framework import viewsets, mixins
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import NotFound
+
 
 from reviews.models import Category, Genre, Title
 from .serializers import (CategorySerializer, GenreSerializer,
@@ -51,7 +53,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id')
-        title = Title.objects.get(id=title_id)
+        try:
+            title = Title.objects.get(id=title_id)
+        except Title.DoesNotExist:
+            raise NotFound('Произведение не найдено')
         serializer.save(author=self.request.user, title=title)
 
 
@@ -65,5 +70,8 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         review_id = self.kwargs.get('review_id')
-        review = Review.objects.get(id=review_id)
+        try:
+            review = Review.objects.get(id=review_id)
+        except Review.DoesNotExist:
+            raise NotFound('Отзыв не найден')
         serializer.save(author=self.request.user, review=review)
