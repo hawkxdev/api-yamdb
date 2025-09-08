@@ -1,6 +1,55 @@
+"""Модели приложения reviews."""
+
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+
+
+class User(AbstractUser):
+    """Кастомная модель пользователя."""
+
+    ROLE_CHOICES = [
+        ('user', 'Пользователь'),
+        ('moderator', 'Модератор'),
+        ('admin', 'Администратор'),
+    ]
+
+    bio = models.TextField(
+        'Биография',
+        blank=True,
+        help_text='Расскажите о себе'
+    )
+    role = models.CharField(
+        'Роль',
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='user',
+        help_text='Роль пользователя'
+    )
+    confirmation_code = models.CharField(
+        'Код подтверждения',
+        max_length=255,
+        blank=True,
+        help_text='Код для подтверждения email'
+    )
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+        ordering = ('username',)
+
+    def __str__(self) -> str:
+        return self.username
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == 'admin' or self.is_superuser
+
+    @property
+    def is_moderator(self) -> bool:
+        return self.role == 'moderator'
 
 
 class Category(models.Model):
@@ -61,8 +110,8 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         verbose_name='Год выпуска',
-        help_text='Укажите год выпуска произведения',
-        validators=[MinValueValidator(0), MaxValueValidator(2025)]
+        validators=[MinValueValidator(0),
+                    MaxValueValidator(timezone.now().year)]
     )
     description = models.TextField(
         verbose_name='Описание произведения',
@@ -87,6 +136,14 @@ class Title(models.Model):
         help_text='Выберите категорию для произведения',
         related_name='titles'
     )
+
+    @property
+    def rating(self):
+        """Вычисляемый рейтинг на основе отзывов."""
+        reviews = self.reviews.all()
+        if not reviews:
+            return None
+        return round(sum(review.score for review in reviews) / len(reviews))
 
     class Meta:
         verbose_name = 'Произведение'
