@@ -115,8 +115,7 @@ class Title(models.Model):
     description = models.TextField(
         verbose_name='Описание произведения',
         help_text='Укажите описание произведения',
-        blank=True,
-        null=True
+        blank=True  # удален избыточный null=True для TextField
     )
     genre = models.ManyToManyField(
         Genre,
