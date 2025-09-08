@@ -3,6 +3,7 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -108,8 +109,8 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         verbose_name='Год выпуска',
-        help_text='Укажите год выпуска произведения',
-        validators=[MinValueValidator(0), MaxValueValidator(2025)]
+        validators=[MinValueValidator(0),
+                    MaxValueValidator(timezone.now().year)]
     )
     description = models.TextField(
         verbose_name='Описание произведения',
@@ -134,6 +135,14 @@ class Title(models.Model):
         help_text='Выберите категорию для произведения',
         related_name='titles'
     )
+
+    @property
+    def rating(self):
+        """Вычисляемый рейтинг на основе отзывов."""
+        reviews = self.reviews.all()
+        if not reviews:
+            return None
+        return round(sum(review.score for review in reviews) / len(reviews))
 
     class Meta:
         verbose_name = 'Произведение'
