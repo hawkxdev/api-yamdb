@@ -1,4 +1,4 @@
-"""Модели приложения reviews."""
+"""Модели данных."""
 
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -8,7 +8,7 @@ from django.utils import timezone
 
 
 class User(AbstractUser):
-    """Кастомная модель пользователя."""
+    """Пользователь системы."""
 
     ROLE_CHOICES = [
         ('user', 'Пользователь'),
@@ -45,14 +45,17 @@ class User(AbstractUser):
 
     @property
     def is_admin(self) -> bool:
+        """Роль администратора."""
         return self.role == 'admin' or self.is_superuser
 
     @property
     def is_moderator(self) -> bool:
+        """Роль модератора."""
         return self.role == 'moderator'
 
 
 class Category(models.Model):
+    """Категория произведений."""
     name = models.CharField(
         max_length=256,
         verbose_name='Название категории',
@@ -78,6 +81,7 @@ class Category(models.Model):
 
 
 class Genre(models.Model):
+    """Жанр произведений."""
     name = models.CharField(
         max_length=256,
         verbose_name='Название жанра',
@@ -103,6 +107,7 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
+    """Произведение искусства."""
     name = models.CharField(
         max_length=256,
         verbose_name='Название произведения',
@@ -116,7 +121,8 @@ class Title(models.Model):
     description = models.TextField(
         verbose_name='Описание произведения',
         help_text='Укажите описание произведения',
-        blank=True  # удален избыточный null=True для TextField
+        blank=True,
+        default=''
     )
     genre = models.ManyToManyField(
         Genre,
@@ -138,7 +144,7 @@ class Title(models.Model):
 
     @property
     def rating(self):
-        """Вычисляемый рейтинг на основе отзывов."""
+        """Средний рейтинг."""
         reviews = self.reviews.all()
         if not reviews:
             return None
@@ -155,6 +161,7 @@ class Title(models.Model):
 
 # Промежуточная модель для связи ManyToMany между Title и Genre
 class GenreTitle(models.Model):
+    """Связь жанр-произведение."""
     title = models.ForeignKey(Title, on_delete=models.CASCADE)
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
 
@@ -163,6 +170,7 @@ class GenreTitle(models.Model):
 
 
 class Review(models.Model):
+    """Отзыв пользователя."""
     title = models.ForeignKey(
         'Title',
         related_name='reviews',
@@ -199,6 +207,7 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
+    """Комментарий к отзыву."""
     review = models.ForeignKey(
         Review, related_name='comments',
         on_delete=models.CASCADE,
