@@ -9,16 +9,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from reviews.models import Category, Genre, Title
+from reviews.models import Category, Genre, Title, Review, Comment
 from .serializers import (
     CategorySerializer, GenreSerializer, SignUpSerializer,
     TitleCreateSerializer, TitleSerializer, TokenSerializer,
-    TokenResponseSerializer, UserSerializer, MeSerializer
+    TokenResponseSerializer, UserSerializer, MeSerializer,
+    ReviewSerializer, CommentSerializer
 )
+from .permissions import IsAuthorOrReadOnly
 
 
 User = get_user_model()
@@ -53,6 +56,40 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update']:
             return TitleCreateSerializer
         return TitleSerializer
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+    def get_queryset(self):
+        title_id = self.kwargs.get('title_id')
+        return Review.objects.filter(title__id=title_id)
+
+    def perform_create(self, serializer):
+        title_id = self.kwargs.get('title_id')
+        try:
+            title = Title.objects.get(id=title_id)
+        except Title.DoesNotExist:
+            raise NotFound('Произведение не найдено')
+        serializer.save(author=self.request.user, title=title)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+    def get_queryset(self):
+        review_id = self.kwargs.get('review_id')
+        return Comment.objects.filter(review__id=review_id)
+
+    def perform_create(self, serializer):
+        review_id = self.kwargs.get('review_id')
+        try:
+            review = Review.objects.get(id=review_id)
+        except Review.DoesNotExist:
+            raise NotFound('Отзыв не найден')
+        serializer.save(author=self.request.user, review=review)
 
 
 class SignUpView(APIView):
