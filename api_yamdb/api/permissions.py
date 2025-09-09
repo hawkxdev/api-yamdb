@@ -1,11 +1,25 @@
 """Права доступа API."""
 
 from rest_framework import permissions
+from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 
-class AdminPermission(permissions.BasePermission):
+class AuthorPermissionMixin:
+    """Миксин для проверки авторских прав."""
+
+    def check_object_permission(self, request: Request, obj) -> bool:
+        """Проверка прав к объекту."""
+        return (
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_admin
+            or request.user.is_moderator
+            or obj.author == request.user
+        )
+
+
+class AdminPermission(BasePermission):
     """Только администраторы."""
 
     def has_permission(self, request: Request, view: APIView) -> bool:
@@ -16,7 +30,7 @@ class AdminPermission(permissions.BasePermission):
         )
 
 
-class AdminOrReadOnlyPermission(permissions.BasePermission):
+class AdminOrReadOnlyPermission(BasePermission):
     """Админ или чтение."""
 
     def has_permission(self, request: Request, view: APIView) -> bool:
@@ -27,7 +41,7 @@ class AdminOrReadOnlyPermission(permissions.BasePermission):
         )
 
 
-class ContentManagerPermission(permissions.BasePermission):
+class ContentManagerPermission(AuthorPermissionMixin, BasePermission):
     """Модераторы и админы."""
 
     def has_permission(self, request: Request, view: APIView) -> bool:
@@ -41,9 +55,4 @@ class ContentManagerPermission(permissions.BasePermission):
         self, request: Request, view: APIView, obj
     ) -> bool:
         """Проверка прав к объекту."""
-        return (
-            request.method in permissions.SAFE_METHODS
-            or request.user.is_admin
-            or request.user.is_moderator
-            or obj.author == request.user
-        )
+        return self.check_object_permission(request, obj)

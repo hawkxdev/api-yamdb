@@ -203,7 +203,11 @@ class Review(models.Model):
         verbose_name_plural = 'Отзывы'
         constraints = [
             models.UniqueConstraint(
-                fields=['title', 'author'], name='unique_review')
+                fields=['title', 'author'], name='unique_review'),
+            models.CheckConstraint(
+                check=models.Q(score__gte=1) & models.Q(score__lte=10),
+                name='valid_score_range'
+            )
         ]
         ordering = ('-pub_date',)
 

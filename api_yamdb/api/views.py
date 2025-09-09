@@ -107,7 +107,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def get_queryset(self) -> QuerySet:
         """Получение отзывов."""
         title_id = self.kwargs.get('title_id')
-        return Review.objects.filter(title__id=title_id)
+        return Review.objects.filter(
+            title__id=title_id
+        ).select_related('author', 'title')
 
     def perform_create(self, serializer: BaseSerializer) -> None:
         """Создание отзыва."""
@@ -128,7 +130,9 @@ class CommentViewSet(viewsets.ModelViewSet):
     def get_queryset(self) -> QuerySet:
         """Получение комментариев."""
         review_id = self.kwargs.get('review_id')
-        return Comment.objects.filter(review__id=review_id)
+        return Comment.objects.filter(
+            review__id=review_id
+        ).select_related('author', 'review__title')
 
     def perform_create(self, serializer: BaseSerializer) -> None:
         """Создание комментария."""
