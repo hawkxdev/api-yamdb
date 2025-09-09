@@ -77,7 +77,7 @@ class Category(models.Model):
         verbose_name_plural = 'Категории'
         ordering = ('name',)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -104,7 +104,7 @@ class Genre(models.Model):
         verbose_name_plural = 'Жанры'
         ordering = ('name',)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -146,7 +146,7 @@ class Title(models.Model):
     )
 
     @property
-    def rating(self):
+    def rating(self) -> int | None:
         """Средний рейтинг."""
         reviews = self.reviews.all()
         if not reviews:
@@ -158,7 +158,7 @@ class Title(models.Model):
         verbose_name_plural = 'Произведения'
         ordering = ('name',)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -169,7 +169,7 @@ class GenreTitle(models.Model):
     title = models.ForeignKey(Title, on_delete=models.CASCADE)
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.title} - {self.genre}'
 
 
@@ -207,7 +207,7 @@ class Review(models.Model):
         ]
         ordering = ('-pub_date',)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Отзыв: {self.text[:30]}...'
 
 
@@ -236,5 +236,5 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
         ordering = ('-pub_date',)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.text[:30]

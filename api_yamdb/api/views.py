@@ -13,6 +13,8 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.serializers import BaseSerializer
+from django.db.models import QuerySet
 
 from reviews.models import Category, Genre, Title, Review, Comment
 from .serializers import (
@@ -63,11 +65,37 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     queryset = Title.objects.all()
     permission_classes = [AdminOrReadOnlyPermission]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    filter_backends = [SearchFilter]
+    search_fields = ['name', 'category__slug', 'genre__slug']
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[BaseSerializer]:
+        """Выбор сериализатора."""
         if self.action in ['create', 'update', 'partial_update']:
             return TitleCreateSerializer
         return TitleSerializer
+
+    def get_queryset(self) -> QuerySet:
+        """Фильтрация произведений."""
+        queryset = Title.objects.all()
+
+        genre = self.request.query_params.get('genre')
+        if genre is not None:
+            queryset = queryset.filter(genre__slug=genre)
+
+        category = self.request.query_params.get('category')
+        if category is not None:
+            queryset = queryset.filter(category__slug=category)
+
+        name = self.request.query_params.get('name')
+        if name is not None:
+            queryset = queryset.filter(name__icontains=name)
+
+        year = self.request.query_params.get('year')
+        if year is not None:
+            queryset = queryset.filter(year=year)
+
+        return queryset
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -76,11 +104,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
+        """Получение отзывов."""
         title_id = self.kwargs.get('title_id')
         return Review.objects.filter(title__id=title_id)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: BaseSerializer) -> None:
+        """Создание отзыва."""
         title_id = self.kwargs.get('title_id')
         try:
             title = Title.objects.get(id=title_id)
@@ -95,11 +125,13 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
+        """Получение комментариев."""
         review_id = self.kwargs.get('review_id')
         return Comment.objects.filter(review__id=review_id)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: BaseSerializer) -> None:
+        """Создание комментария."""
         review_id = self.kwargs.get('review_id')
         try:
             review = Review.objects.get(id=review_id)
@@ -210,8 +242,8 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [AdminPermission]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
-    def get_permissions(self):
-        """Переопределение прав для /users/me/."""
+    def get_permissions(self) -> list[permissions.BasePermission]:
+        """Переопределение прав."""
         if self.action == 'me':
             return [permissions.IsAuthenticated()]
         return super().get_permissions()

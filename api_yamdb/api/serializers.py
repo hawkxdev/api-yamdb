@@ -80,13 +80,10 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         model = Title
         fields = ('id', 'name', 'year', 'description', 'genre', 'category')
 
-    def to_representation(self, instance):
-        """
-        Преобразует instance в словарь для сериализации.
-
+    def to_representation(self, instance) -> dict[str, Any]:
+        """Преобразует instance в словарь для сериализации.
         Args:
             instance: Объект Title для сериализации
-
         Returns:
             dict: Сериализованные данные
         """
@@ -106,12 +103,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
 
-    def validate_score(self, value):
+    def validate_score(self, value: int) -> int:
+        """Валидация оценки."""
         if not (1 <= value <= 10):
             raise serializers.ValidationError('Оценка должна быть от 1 до 10.')
         return value
 
-    def validate(self, data):
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Валидация уникальности отзыва."""
         request = self.context.get('request')
         title_id = self.context['view'].kwargs.get('title_id')
         user = request.user

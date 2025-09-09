@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.db.models import QuerySet
 from .models import Category, Genre, Title, GenreTitle, User, Review, Comment
 
 
@@ -22,7 +23,7 @@ class TitleAdmin(admin.ModelAdmin):
     inlines = [GenreTitleInline]
     list_editable = ('year', 'category')
 
-    def display_genre(self, obj):
+    def display_genre(self, obj: Title) -> str:
         """Отображает список жанров произведения в админке.
         Args:
             obj: Объект Title
