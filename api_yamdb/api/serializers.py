@@ -34,6 +34,8 @@ def validate_username_field(value: str) -> str:
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """Сериализатор категорий."""
+
     class Meta:
         model = Category
         fields = ('name', 'slug')
@@ -41,6 +43,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
+    """Сериализатор жанров."""
+
     class Meta:
         model = Genre
         fields = ('name', 'slug')
@@ -48,6 +52,8 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
+    """Сериализатор произведений."""
+
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
 
@@ -58,6 +64,8 @@ class TitleSerializer(serializers.ModelSerializer):
 
 
 class TitleCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор создания произведений."""
+
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field='slug'
@@ -72,13 +80,10 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         model = Title
         fields = ('id', 'name', 'year', 'description', 'genre', 'category')
 
-    def to_representation(self, instance):
-        """
-        Преобразует instance в словарь для сериализации.
-
+    def to_representation(self, instance) -> dict[str, Any]:
+        """Преобразует instance в словарь для сериализации.
         Args:
             instance: Объект Title для сериализации
-
         Returns:
             dict: Сериализованные данные
         """
@@ -87,6 +92,8 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор отзывов."""
+
     author = serializers.SlugRelatedField(
         read_only=True,
         slug_field='username'
@@ -96,12 +103,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
 
-    def validate_score(self, value):
+    def validate_score(self, value: int) -> int:
+        """Валидация оценки."""
         if not (1 <= value <= 10):
             raise serializers.ValidationError('Оценка должна быть от 1 до 10.')
         return value
 
-    def validate(self, data):
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Валидация уникальности отзыва."""
         request = self.context.get('request')
         title_id = self.context['view'].kwargs.get('title_id')
         user = request.user
@@ -114,6 +123,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор комментариев."""
+
     author = serializers.SlugRelatedField(
         read_only=True,
         slug_field='username'
@@ -177,10 +188,21 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+        extra_kwargs = {
+            'email': {'required': True}
+        }
 
     def validate_username(self, value: str) -> str:
         """Валидация username."""
         return validate_username_field(value)
+
+    def validate_email(self, value: str) -> str:
+        """Валидация email."""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                'Пользователь с таким email уже существует.'
+            )
+        return value
 
 
 class MeSerializer(serializers.ModelSerializer):

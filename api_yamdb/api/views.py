@@ -6,13 +6,15 @@ from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.http import HttpRequest
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.serializers import BaseSerializer
+from django.db.models import QuerySet
 
 from reviews.models import Category, Genre, Title, Review, Comment
 from .serializers import (
@@ -21,7 +23,10 @@ from .serializers import (
     TokenResponseSerializer, UserSerializer, MeSerializer,
     ReviewSerializer, CommentSerializer
 )
-from .permissions import IsAuthorOrReadOnly
+from .permissions import (
+    AdminPermission, AdminOrReadOnlyPermission,
+    ContentManagerPermission
+)
 
 
 User = get_user_model()
@@ -31,42 +36,83 @@ class CategoryViewSet(mixins.ListModelMixin,
                       mixins.CreateModelMixin,
                       mixins.DestroyModelMixin,
                       viewsets.GenericViewSet):
+    """Управление категориями."""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = [SearchFilter]
     search_fields = ['name', 'slug']
     lookup_field = 'slug'
+    permission_classes = [AdminOrReadOnlyPermission]
 
 
 class GenreViewSet(mixins.ListModelMixin,
                    mixins.CreateModelMixin,
                    mixins.DestroyModelMixin,
                    viewsets.GenericViewSet):
+    """Управление жанрами."""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     filter_backends = [SearchFilter]
     search_fields = ['name', 'slug']
     lookup_field = 'slug'
+    permission_classes = [AdminOrReadOnlyPermission]
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    """Управление произведениями."""
 
-    def get_serializer_class(self):
+    queryset = Title.objects.all()
+    permission_classes = [AdminOrReadOnlyPermission]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    filter_backends = [SearchFilter]
+    search_fields = ['name', 'category__slug', 'genre__slug']
+
+    def get_serializer_class(self) -> type[BaseSerializer]:
+        """Выбор сериализатора."""
         if self.action in ['create', 'update', 'partial_update']:
             return TitleCreateSerializer
         return TitleSerializer
 
+    def get_queryset(self) -> QuerySet:
+        """Фильтрация произведений."""
+        queryset = Title.objects.all()
+
+        genre = self.request.query_params.get('genre')
+        if genre is not None:
+            queryset = queryset.filter(genre__slug=genre)
+
+        category = self.request.query_params.get('category')
+        if category is not None:
+            queryset = queryset.filter(category__slug=category)
+
+        name = self.request.query_params.get('name')
+        if name is not None:
+            queryset = queryset.filter(name__icontains=name)
+
+        year = self.request.query_params.get('year')
+        if year is not None:
+            queryset = queryset.filter(year=year)
+
+        return queryset
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
+    """Управление отзывами."""
+
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
+        """Получение отзывов."""
         title_id = self.kwargs.get('title_id')
-        return Review.objects.filter(title__id=title_id)
+        return Review.objects.filter(
+            title__id=title_id
+        ).select_related('author', 'title')
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: BaseSerializer) -> None:
+        """Создание отзыва."""
         title_id = self.kwargs.get('title_id')
         try:
             title = Title.objects.get(id=title_id)
@@ -76,14 +122,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """Управление комментариями."""
+
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
+        """Получение комментариев."""
         review_id = self.kwargs.get('review_id')
-        return Comment.objects.filter(review__id=review_id)
+        return Comment.objects.filter(
+            review__id=review_id
+        ).select_related('author', 'review__title')
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: BaseSerializer) -> None:
+        """Создание комментария."""
         review_id = self.kwargs.get('review_id')
         try:
             review = Review.objects.get(id=review_id)
@@ -191,10 +243,21 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter]
     search_fields = ['username']
     lookup_field = 'username'
+    permission_classes = [AdminPermission]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
-    @action(detail=False, methods=['get', 'patch'])
+    def get_permissions(self) -> list[permissions.BasePermission]:
+        """Переопределение прав."""
+        if self.action == 'me':
+            return [permissions.IsAuthenticated()]
+        return super().get_permissions()
+
+    @action(detail=False, methods=['get', 'patch', 'delete'])
     def me(self, request: HttpRequest) -> Response:
         """Профиль пользователя."""
+        if request.method == 'DELETE':
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
         if request.method == 'GET':
             serializer = MeSerializer(request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
