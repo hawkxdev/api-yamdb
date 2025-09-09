@@ -198,6 +198,7 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ['username']
     lookup_field = 'username'
     permission_classes = [AdminPermission]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
         """Переопределение прав для /users/me/."""
@@ -205,9 +206,12 @@ class UserViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return super().get_permissions()
 
-    @action(detail=False, methods=['get', 'patch'])
+    @action(detail=False, methods=['get', 'patch', 'delete'])
     def me(self, request: HttpRequest) -> Response:
         """Профиль пользователя."""
+        if request.method == 'DELETE':
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            
         if request.method == 'GET':
             serializer = MeSerializer(request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)

@@ -177,10 +177,21 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+        extra_kwargs = {
+            'email': {'required': True}
+        }
 
     def validate_username(self, value: str) -> str:
         """Валидация username."""
         return validate_username_field(value)
+
+    def validate_email(self, value: str) -> str:
+        """Валидация email."""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                'Пользователь с таким email уже существует.'
+            )
+        return value
 
 
 class MeSerializer(serializers.ModelSerializer):
