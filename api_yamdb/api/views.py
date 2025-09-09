@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.http import HttpRequest
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework.exceptions import NotFound
@@ -17,7 +18,8 @@ from reviews.models import Category, Genre, Title, Review, Comment
 from .serializers import (
     CategorySerializer, GenreSerializer, SignUpSerializer,
     TitleCreateSerializer, TitleSerializer, TokenSerializer,
-    TokenResponseSerializer, ReviewSerializer, CommentSerializer
+    TokenResponseSerializer, UserSerializer, MeSerializer,
+    ReviewSerializer, CommentSerializer
 )
 from .permissions import IsAuthorOrReadOnly
 
@@ -177,5 +179,33 @@ class TokenView(APIView):
                 response_serializer.data,
                 status=status.HTTP_200_OK
             )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """Управление пользователями."""
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['username']
+    lookup_field = 'username'
+
+    @action(detail=False, methods=['get', 'patch'])
+    def me(self, request: HttpRequest) -> Response:
+        """Профиль пользователя."""
+        if request.method == 'GET':
+            serializer = MeSerializer(request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        serializer = MeSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

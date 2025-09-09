@@ -16,6 +16,21 @@ USERNAME_ERROR = (
     'Username может содержать только буквы, '
     'цифры и символы @, ., +, -, _'
 )
+FORBIDDEN_USERNAME = 'me'
+FORBIDDEN_USERNAME_ERROR = (
+    "Использовать имя 'me' в качестве username запрещено."
+)
+
+
+def validate_username_field(value: str) -> str:
+    """Общая валидация username."""
+    if value.lower() == FORBIDDEN_USERNAME:
+        raise serializers.ValidationError(FORBIDDEN_USERNAME_ERROR)
+
+    if not re.match(USERNAME_PATTERN, value):
+        raise serializers.ValidationError(USERNAME_ERROR)
+
+    return value
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -117,15 +132,7 @@ class SignUpSerializer(serializers.Serializer):
 
     def validate_username(self, value: str) -> str:
         """Валидация username."""
-        if value.lower() == 'me':
-            raise serializers.ValidationError(
-                "Использовать имя 'me' в качестве username запрещено."
-            )
-
-        if not re.match(USERNAME_PATTERN, value):
-            raise serializers.ValidationError(USERNAME_ERROR)
-
-        return value
+        return validate_username_field(value)
 
     def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         """Проверка уникальности."""
@@ -162,3 +169,28 @@ class TokenResponseSerializer(serializers.Serializer):
     """Ответ с токеном."""
 
     token = serializers.CharField()
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Администрирование пользователей."""
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+
+    def validate_username(self, value: str) -> str:
+        """Валидация username."""
+        return validate_username_field(value)
+
+
+class MeSerializer(serializers.ModelSerializer):
+    """Профиль пользователя."""
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+        read_only_fields = ('role',)
+
+    def validate_username(self, value: str) -> str:
+        """Валидация username."""
+        return validate_username_field(value)
