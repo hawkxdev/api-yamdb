@@ -34,6 +34,8 @@ def validate_username_field(value: str) -> str:
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """Сериализатор категорий."""
+
     class Meta:
         model = Category
         fields = ('name', 'slug')
@@ -41,6 +43,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
+    """Сериализатор жанров."""
+
     class Meta:
         model = Genre
         fields = ('name', 'slug')
@@ -48,6 +52,8 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
+    """Сериализатор произведений."""
+
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
 
@@ -58,6 +64,8 @@ class TitleSerializer(serializers.ModelSerializer):
 
 
 class TitleCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор создания произведений."""
+
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field='slug'
@@ -87,6 +95,8 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор отзывов."""
+
     author = serializers.SlugRelatedField(
         read_only=True,
         slug_field='username'
@@ -114,6 +124,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор комментариев."""
+
     author = serializers.SlugRelatedField(
         read_only=True,
         slug_field='username'

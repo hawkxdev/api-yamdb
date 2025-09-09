@@ -34,6 +34,8 @@ class CategoryViewSet(mixins.ListModelMixin,
                       mixins.CreateModelMixin,
                       mixins.DestroyModelMixin,
                       viewsets.GenericViewSet):
+    """Управление категориями."""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = [SearchFilter]
@@ -46,6 +48,8 @@ class GenreViewSet(mixins.ListModelMixin,
                    mixins.CreateModelMixin,
                    mixins.DestroyModelMixin,
                    viewsets.GenericViewSet):
+    """Управление жанрами."""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     filter_backends = [SearchFilter]
@@ -55,6 +59,8 @@ class GenreViewSet(mixins.ListModelMixin,
 
 
 class TitleViewSet(viewsets.ModelViewSet):
+    """Управление произведениями."""
+
     queryset = Title.objects.all()
     permission_classes = [AdminOrReadOnlyPermission]
 
@@ -65,6 +71,8 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
+    """Управление отзывами."""
+
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
@@ -82,6 +90,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """Управление комментариями."""
+
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
@@ -211,7 +221,7 @@ class UserViewSet(viewsets.ModelViewSet):
         """Профиль пользователя."""
         if request.method == 'DELETE':
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-            
+
         if request.method == 'GET':
             serializer = MeSerializer(request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,9 +1,13 @@
-from django.core.management.base import BaseCommand
+"""Импорт CSV данных"""
+
 import csv
-from reviews.models import Category, Genre, Title, GenreTitle
+
+from django.core.management.base import BaseCommand
+from reviews.models import Category, Genre, GenreTitle, Title
 
 
 class Command(BaseCommand):
+    """Команда импорт данных"""
     help = (
         'Импорт данных из CSV файлов для '
         'категорий, жанров, произведений и их связей'

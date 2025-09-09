@@ -56,6 +56,7 @@ class User(AbstractUser):
 
 class Category(models.Model):
     """Категория произведений."""
+
     name = models.CharField(
         max_length=256,
         verbose_name='Название категории',
@@ -82,6 +83,7 @@ class Category(models.Model):
 
 class Genre(models.Model):
     """Жанр произведений."""
+
     name = models.CharField(
         max_length=256,
         verbose_name='Название жанра',
@@ -108,6 +110,7 @@ class Genre(models.Model):
 
 class Title(models.Model):
     """Произведение искусства."""
+
     name = models.CharField(
         max_length=256,
         verbose_name='Название произведения',
@@ -162,6 +165,7 @@ class Title(models.Model):
 # Промежуточная модель для связи ManyToMany между Title и Genre
 class GenreTitle(models.Model):
     """Связь жанр-произведение."""
+
     title = models.ForeignKey(Title, on_delete=models.CASCADE)
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
 
@@ -171,6 +175,7 @@ class GenreTitle(models.Model):
 
 class Review(models.Model):
     """Отзыв пользователя."""
+
     title = models.ForeignKey(
         'Title',
         related_name='reviews',
@@ -208,6 +213,7 @@ class Review(models.Model):
 
 class Comment(models.Model):
     """Комментарий к отзыву."""
+
     review = models.ForeignKey(
         Review, related_name='comments',
         on_delete=models.CASCADE,
