@@ -2,7 +2,6 @@
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.db.models import QuerySet
 from .models import Category, Genre, Title, GenreTitle, User, Review, Comment
 
 

@@ -150,12 +150,16 @@ class SignUpSerializer(serializers.Serializer):
         email = data.get('email')
         username = data.get('username')
 
-        if User.objects.filter(email=email).exclude(username=username).exists():
+        if User.objects.filter(email=email).exclude(
+            username=username
+        ).exists():
             raise serializers.ValidationError({
                 'email': 'Пользователь с таким email уже существует.'
             })
 
-        if User.objects.filter(username=username).exclude(email=email).exists():
+        if User.objects.filter(username=username).exclude(
+            email=email
+        ).exists():
             raise serializers.ValidationError({
                 'username': 'Пользователь с таким username уже существует.'
             })
@@ -187,7 +191,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+        fields = (
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
+        )
         extra_kwargs = {
             'email': {'required': True}
         }
@@ -210,7 +216,9 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+        fields = (
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
+        )
         read_only_fields = ('role',)
 
     def validate_username(self, value: str) -> str:
