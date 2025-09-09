@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.http import HttpRequest
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
@@ -21,7 +21,10 @@ from .serializers import (
     TokenResponseSerializer, UserSerializer, MeSerializer,
     ReviewSerializer, CommentSerializer
 )
-from .permissions import IsAuthorOrReadOnly
+from .permissions import (
+    AdminPermission, AdminOrReadOnlyPermission,
+    ContentManagerPermission
+)
 
 
 User = get_user_model()
@@ -36,6 +39,7 @@ class CategoryViewSet(mixins.ListModelMixin,
     filter_backends = [SearchFilter]
     search_fields = ['name', 'slug']
     lookup_field = 'slug'
+    permission_classes = [AdminOrReadOnlyPermission]
 
 
 class GenreViewSet(mixins.ListModelMixin,
@@ -47,10 +51,12 @@ class GenreViewSet(mixins.ListModelMixin,
     filter_backends = [SearchFilter]
     search_fields = ['name', 'slug']
     lookup_field = 'slug'
+    permission_classes = [AdminOrReadOnlyPermission]
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
+    permission_classes = [AdminOrReadOnlyPermission]
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -60,7 +66,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -77,7 +83,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, ContentManagerPermission]
 
     def get_queryset(self):
         review_id = self.kwargs.get('review_id')
@@ -191,6 +197,13 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter]
     search_fields = ['username']
     lookup_field = 'username'
+    permission_classes = [AdminPermission]
+
+    def get_permissions(self):
+        """Переопределение прав для /users/me/."""
+        if self.action == 'me':
+            return [permissions.IsAuthenticated()]
+        return super().get_permissions()
 
     @action(detail=False, methods=['get', 'patch'])
     def me(self, request: HttpRequest) -> Response:
