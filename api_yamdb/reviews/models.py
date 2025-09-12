@@ -10,27 +10,38 @@ from django.utils import timezone
 class User(AbstractUser):
     """Пользователь системы."""
 
+    # Константы для ролей
+    ROLE_USER = 'user'
+    ROLE_MODERATOR = 'moderator'
+    ROLE_ADMIN = 'admin'
+
+    # Константы для длин полей
+    ROLE_MAX_LENGTH = 20
+    CONFIRMATION_CODE_MAX_LENGTH = 255
+    BIO_MAX_LENGTH = 1000
+
     ROLE_CHOICES = [
-        ('user', 'Пользователь'),
-        ('moderator', 'Модератор'),
-        ('admin', 'Администратор'),
+        (ROLE_USER, 'Пользователь'),
+        (ROLE_MODERATOR, 'Модератор'),
+        (ROLE_ADMIN, 'Администратор'),
     ]
 
     bio = models.TextField(
         'Биография',
         blank=True,
+        max_length=BIO_MAX_LENGTH,
         help_text='Расскажите о себе'
     )
     role = models.CharField(
         'Роль',
-        max_length=20,
+        max_length=ROLE_MAX_LENGTH,
         choices=ROLE_CHOICES,
-        default='user',
+        default=ROLE_USER,
         help_text='Роль пользователя'
     )
     confirmation_code = models.CharField(
         'Код подтверждения',
-        max_length=255,
+        max_length=CONFIRMATION_CODE_MAX_LENGTH,
         blank=True,
         help_text='Код для подтверждения email'
     )
@@ -46,12 +57,12 @@ class User(AbstractUser):
     @property
     def is_admin(self) -> bool:
         """Роль администратора."""
-        return self.role == 'admin' or self.is_superuser
+        return self.role == self.ROLE_ADMIN or self.is_superuser
 
     @property
     def is_moderator(self) -> bool:
         """Роль модератора."""
-        return self.role == 'moderator'
+        return self.role == self.ROLE_MODERATOR
 
 
 class Category(models.Model):
@@ -108,13 +119,35 @@ class Genre(models.Model):
         return self.name
 
 
+class TitleQuerySet(models.QuerySet):
+    """Кастомный QuerySet для аннотации рейтинга."""
+
+    def with_rating(self):
+        """Добавляет аннотацию среднего рейтинга."""
+        return self.annotate(
+            rating_avg=models.Avg('reviews__score')
+        )
+
+
+class TitleManager(models.Manager):
+    """Кастомный менеджер для Title."""
+
+    def get_queryset(self):
+        return TitleQuerySet(self.model, using=self._db)
+
+    def with_rating(self):
+        return self.get_queryset().with_rating()
+
+
 class Title(models.Model):
     """Произведение искусства."""
 
+    # Константы
+    NAME_MAX_LENGTH = 256
+
     name = models.CharField(
-        max_length=256,
-        verbose_name='Название произведения',
-        help_text='Укажите название произведения (например, "Тёмный рыцарь")'
+        max_length=NAME_MAX_LENGTH,
+        verbose_name='Название произведения'
     )
     year = models.IntegerField(
         verbose_name='Год выпуска',
@@ -123,7 +156,6 @@ class Title(models.Model):
     )
     description = models.TextField(
         verbose_name='Описание произведения',
-        help_text='Укажите описание произведения',
         blank=True,
         default=''
     )
@@ -132,7 +164,6 @@ class Title(models.Model):
         through='GenreTitle',
         blank=True,
         verbose_name='Жанр',
-        help_text='Выберите жанр(ы) для произведения',
         related_name='titles'
     )
     category = models.ForeignKey(
@@ -141,17 +172,11 @@ class Title(models.Model):
         blank=True,
         null=True,
         verbose_name='Категория',
-        help_text='Выберите категорию для произведения',
         related_name='titles'
     )
 
-    @property
-    def rating(self) -> int | None:
-        """Средний рейтинг."""
-        reviews = self.reviews.all()
-        if not reviews:
-            return None
-        return round(sum(review.score for review in reviews) / len(reviews))
+    # Менеджер
+    objects = TitleManager()
 
     class Meta:
         verbose_name = 'Произведение'

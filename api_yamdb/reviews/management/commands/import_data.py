@@ -61,20 +61,49 @@ class Command(BaseCommand):
 
     def import_titles(self):
         """Импорт произведений из CSV файла."""
+
         try:
             with open('static/data/titles.csv', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
+                success_count = 0
+                error_count = 0
+
                 for row in reader:
-                    category = Category.objects.get(id=row['category'])
-                    Title.objects.get_or_create(
-                        id=row['id'],
-                        name=row['name'],
-                        year=row['year'],
-                        category=category
-                    )
+                    try:
+                        category = Category.objects.get(id=row['category'])
+
+                        Title.objects.get_or_create(
+                            id=row['id'],
+                            name=row['name'],
+                            year=row['year'],
+                            category=category
+                        )
+                        success_count += 1
+
+                    except Category.DoesNotExist:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f'Категория с id {row["category"]} не найдена.'
+                                f'Пропускаем произведение: {row["name"]} (id: {row["id"]})'
+                            )
+                        )
+                        error_count += 1
+
+                    except ValueError as e:
+                        self.stdout.write(
+                            self.style.ERROR(
+                                f'Ошибка данных в строке: {row}. Ошибка: {e}'
+                            )
+                        )
+                        error_count += 1
+
                 self.stdout.write(
-                    self.style.SUCCESS('Произведения успешно импортированы')
+                    self.style.SUCCESS(
+                        f'Произведения импортированы: {success_count} успешно,'
+                        f'{error_count} с ошибками'
+                    )
                 )
+
         except FileNotFoundError:
             self.stdout.write(
                 self.style.WARNING('Файл titles.csv не найден')

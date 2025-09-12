@@ -4,6 +4,7 @@ import secrets
 
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpRequest
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import mixins, status, viewsets, permissions
@@ -16,6 +17,7 @@ from rest_framework.views import APIView
 from rest_framework.serializers import BaseSerializer
 from django.db.models import QuerySet
 
+from .filters import TitleFilter
 from reviews.models import Category, Genre, Title, Review, Comment
 from .serializers import (
     CategorySerializer, GenreSerializer, SignUpSerializer,
@@ -63,11 +65,12 @@ class GenreViewSet(mixins.ListModelMixin,
 class TitleViewSet(viewsets.ModelViewSet):
     """Управление произведениями."""
 
-    queryset = Title.objects.all()
+    queryset = Title.objects.with_rating()
+
     permission_classes = [AdminOrReadOnlyPermission]
     http_method_names = ['get', 'post', 'patch', 'delete']
-    filter_backends = [SearchFilter]
-    search_fields = ['name', 'category__slug', 'genre__slug']
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TitleFilter
 
     def get_serializer_class(self) -> type[BaseSerializer]:
         """Выбор сериализатора."""
@@ -76,24 +79,10 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleSerializer
 
     def get_queryset(self) -> QuerySet:
-        """Фильтрация произведений."""
-        queryset = Title.objects.all()
+        """Фильтрация произведений с аннотацией рейтинга."""
+        queryset = Title.objects.with_rating()
 
-        genre = self.request.query_params.get('genre')
-        if genre is not None:
-            queryset = queryset.filter(genre__slug=genre)
-
-        category = self.request.query_params.get('category')
-        if category is not None:
-            queryset = queryset.filter(category__slug=category)
-
-        name = self.request.query_params.get('name')
-        if name is not None:
-            queryset = queryset.filter(name__icontains=name)
-
-        year = self.request.query_params.get('year')
-        if year is not None:
-            queryset = queryset.filter(year=year)
+        queryset = self.filter_queryset(queryset)
 
         return queryset
 
