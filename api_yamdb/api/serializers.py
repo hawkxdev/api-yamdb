@@ -56,6 +56,7 @@ class TitleSerializer(serializers.ModelSerializer):
 
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
@@ -195,14 +196,6 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_username(self, value: str) -> str:
         """Валидация username."""
         return validate_username_field(value)
-
-    def validate_email(self, value: str) -> str:
-        """Валидация email."""
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(
-                'Пользователь с таким email уже существует.'
-            )
-        return value
 
 
 class MeSerializer(serializers.ModelSerializer):
