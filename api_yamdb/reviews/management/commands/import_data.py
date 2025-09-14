@@ -83,8 +83,10 @@ class Command(BaseCommand):
                     except Category.DoesNotExist:
                         self.stdout.write(
                             self.style.WARNING(
-                                f'Категория с id {row["category"]} не найдена.'
-                                f'Пропускаем произведение: {row["name"]} (id: {row["id"]})'
+                                f'Категория с id {row["category"]} '
+                                f'не найдена. '
+                                f'Пропускаем произведение: '
+                                f'{row["name"]} (id: {row["id"]})'
                             )
                         )
                         error_count += 1
@@ -133,7 +135,8 @@ class Command(BaseCommand):
                         self.stdout.write(
                             self.style.WARNING(
                                 f'Объект не найден: {e}. '
-                                f'Пропускаем связь: title_id={row["title_id"]}, '
+                                f'Пропускаем связь: '
+                                f'title_id={row["title_id"]}, '
                                 f'genre_id={row["genre_id"]}'
                             )
                         )

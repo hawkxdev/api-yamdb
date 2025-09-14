@@ -215,7 +215,9 @@ class UserSerializer(serializers.ModelSerializer):
                     'Пользователь с таким email уже существует.'
                 )
         else:
-            if User.objects.filter(email=value).exclude(id=self.instance.id).exists():
+            if User.objects.filter(email=value).exclude(
+                id=self.instance.id
+            ).exists():
                 raise serializers.ValidationError(
                     'Пользователь с таким email уже существует.'
                 )
