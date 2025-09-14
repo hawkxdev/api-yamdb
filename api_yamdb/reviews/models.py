@@ -10,12 +10,10 @@ from django.utils import timezone
 class User(AbstractUser):
     """Пользователь системы."""
 
-    # Константы для ролей
     ROLE_USER = 'user'
     ROLE_MODERATOR = 'moderator'
     ROLE_ADMIN = 'admin'
 
-    # Константы для длин полей
     ROLE_MAX_LENGTH = 20
     CONFIRMATION_CODE_MAX_LENGTH = 255
     BIO_MAX_LENGTH = 1000
@@ -142,7 +140,6 @@ class TitleManager(models.Manager):
 class Title(models.Model):
     """Произведение искусства."""
 
-    # Константы
     NAME_MAX_LENGTH = 256
 
     name = models.CharField(
@@ -161,7 +158,6 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
-        through='GenreTitle',
         blank=True,
         verbose_name='Жанр',
         related_name='titles'
@@ -175,7 +171,6 @@ class Title(models.Model):
         related_name='titles'
     )
 
-    # Менеджер
     objects = TitleManager()
 
     class Meta:
@@ -185,17 +180,6 @@ class Title(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
-
-# Промежуточная модель для связи ManyToMany между Title и Genre
-class GenreTitle(models.Model):
-    """Связь жанр-произведение."""
-
-    title = models.ForeignKey(Title, on_delete=models.CASCADE)
-    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
-
-    def __str__(self) -> str:
-        return f'{self.title} - {self.genre}'
 
 
 class Review(models.Model):

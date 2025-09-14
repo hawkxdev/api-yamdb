@@ -3,7 +3,7 @@
 import csv
 
 from django.core.management.base import BaseCommand
-from reviews.models import Category, Genre, GenreTitle, Title
+from reviews.models import Category, Genre, Title
 
 
 class Command(BaseCommand):
@@ -168,6 +168,4 @@ class Command(BaseCommand):
         self.stdout.write(f'Категорий: {Category.objects.count()}')
         self.stdout.write(f'Жанров: {Genre.objects.count()}')
         self.stdout.write(f'Произведений: {Title.objects.count()}')
-        self.stdout.write(
-            f'Связей жанров и произведений: {GenreTitle.objects.count()}'
-        )
+        self.stdout.write('Связей жанров и произведений импортировано')
