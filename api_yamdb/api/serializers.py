@@ -5,9 +5,7 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-
-from reviews.models import Review, Category, Comment, Genre, Title
-
+from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
 
@@ -56,11 +54,18 @@ class TitleSerializer(serializers.ModelSerializer):
 
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'rating', 'description',
                   'genre', 'category')
+
+    def get_rating(self, obj) -> int | None:
+        """Получение среднего рейтинга."""
+        if hasattr(obj, 'rating_avg'):
+            return round(obj.rating_avg) if obj.rating_avg else None
+        return None
 
 
 class TitleCreateSerializer(serializers.ModelSerializer):
@@ -204,10 +209,16 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value: str) -> str:
         """Валидация email."""
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(
-                'Пользователь с таким email уже существует.'
-            )
+        if self.instance is None:
+            if User.objects.filter(email=value).exists():
+                raise serializers.ValidationError(
+                    'Пользователь с таким email уже существует.'
+                )
+        else:
+            if User.objects.filter(email=value).exclude(id=self.instance.id).exists():
+                raise serializers.ValidationError(
+                    'Пользователь с таким email уже существует.'
+                )
         return value
 
 

@@ -2,14 +2,8 @@
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Category, Genre, Title, GenreTitle, User, Review, Comment
 
-
-class GenreTitleInline(admin.TabularInline):
-    """Inline жанров произведения."""
-
-    model = GenreTitle
-    extra = 1
+from .models import Category, Comment, Genre, Review, Title, User
 
 
 @admin.register(Title)
@@ -19,16 +13,10 @@ class TitleAdmin(admin.ModelAdmin):
     list_display = ('name', 'year', 'category', 'display_genre')
     list_filter = ('category', 'year', 'genre')
     search_fields = ('name', 'category__name', 'genre__name')
-    inlines = [GenreTitleInline]
     list_editable = ('year', 'category')
 
     def display_genre(self, obj: Title) -> str:
-        """Отображает список жанров произведения в админке.
-        Args:
-            obj: Объект Title
-        Returns:
-            str: Строка с перечислением жанров
-        """
+        """Отображает список жанров произведения."""
         return ', '.join([genre.name for genre in obj.genre.all()])
     display_genre.short_description = 'Жанры'
 

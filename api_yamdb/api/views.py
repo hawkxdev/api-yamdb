@@ -4,30 +4,28 @@ import secrets
 
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django.db.models import QuerySet
 from django.http import HttpRequest
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import mixins, status, viewsets, permissions
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
-from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.serializers import BaseSerializer
-from django.db.models import QuerySet
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from reviews.models import Category, Comment, Genre, Review, Title
 
-from reviews.models import Category, Genre, Title, Review, Comment
-from .serializers import (
-    CategorySerializer, GenreSerializer, SignUpSerializer,
-    TitleCreateSerializer, TitleSerializer, TokenSerializer,
-    TokenResponseSerializer, UserSerializer, MeSerializer,
-    ReviewSerializer, CommentSerializer
-)
-from .permissions import (
-    AdminPermission, AdminOrReadOnlyPermission,
-    ContentManagerPermission
-)
-
+from .filters import TitleFilter
+from .permissions import (AdminOrReadOnlyPermission, AdminPermission,
+                          ContentManagerPermission)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, MeSerializer, ReviewSerializer,
+                          SignUpSerializer, TitleCreateSerializer,
+                          TitleSerializer, TokenResponseSerializer,
+                          TokenSerializer, UserSerializer)
 
 User = get_user_model()
 
@@ -63,11 +61,12 @@ class GenreViewSet(mixins.ListModelMixin,
 class TitleViewSet(viewsets.ModelViewSet):
     """Управление произведениями."""
 
-    queryset = Title.objects.all()
+    queryset = Title.objects.with_rating()
+
     permission_classes = [AdminOrReadOnlyPermission]
     http_method_names = ['get', 'post', 'patch', 'delete']
-    filter_backends = [SearchFilter]
-    search_fields = ['name', 'category__slug', 'genre__slug']
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TitleFilter
 
     def get_serializer_class(self) -> type[BaseSerializer]:
         """Выбор сериализатора."""
@@ -76,24 +75,10 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleSerializer
 
     def get_queryset(self) -> QuerySet:
-        """Фильтрация произведений."""
-        queryset = Title.objects.all()
+        """Фильтрация произведений с аннотацией рейтинга."""
+        queryset = Title.objects.with_rating()
 
-        genre = self.request.query_params.get('genre')
-        if genre is not None:
-            queryset = queryset.filter(genre__slug=genre)
-
-        category = self.request.query_params.get('category')
-        if category is not None:
-            queryset = queryset.filter(category__slug=category)
-
-        name = self.request.query_params.get('name')
-        if name is not None:
-            queryset = queryset.filter(name__icontains=name)
-
-        year = self.request.query_params.get('year')
-        if year is not None:
-            queryset = queryset.filter(year=year)
+        queryset = self.filter_queryset(queryset)
 
         return queryset
 
@@ -114,10 +99,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer: BaseSerializer) -> None:
         """Создание отзыва."""
         title_id = self.kwargs.get('title_id')
-        try:
-            title = Title.objects.get(id=title_id)
-        except Title.DoesNotExist:
-            raise NotFound('Произведение не найдено')
+        title = get_object_or_404(Title, id=title_id)
         serializer.save(author=self.request.user, title=title)
 
 
@@ -137,10 +119,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer: BaseSerializer) -> None:
         """Создание комментария."""
         review_id = self.kwargs.get('review_id')
-        try:
-            review = Review.objects.get(id=review_id)
-        except Review.DoesNotExist:
-            raise NotFound('Отзыв не найден')
+        review = get_object_or_404(Review, id=review_id)
         serializer.save(author=self.request.user, review=review)
 
 
