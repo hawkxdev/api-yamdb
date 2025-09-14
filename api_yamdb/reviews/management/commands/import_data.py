@@ -118,20 +118,41 @@ class Command(BaseCommand):
         try:
             with open('static/data/genre_title.csv', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
+                success_count = 0
+                error_count = 0
+
                 for row in reader:
-                    title = Title.objects.get(id=row['title_id'])
-                    genre = Genre.objects.get(id=row['genre_id'])
-                    GenreTitle.objects.get_or_create(title=title, genre=genre)
+                    try:
+                        title = Title.objects.get(id=row['title_id'])
+                        genre = Genre.objects.get(id=row['genre_id'])
+
+                        title.genre.add(genre)
+                        success_count += 1
+
+                    except (Title.DoesNotExist, Genre.DoesNotExist) as e:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f'Объект не найден: {e}. '
+                                f'Пропускаем связь: title_id={row["title_id"]}, '
+                                f'genre_id={row["genre_id"]}'
+                            )
+                        )
+                        error_count += 1
+
                 self.stdout.write(
-                    self.style.SUCCESS('Связи жанров успешно импортированы')
+                    self.style.SUCCESS(
+                        f'Связи импортированы: {success_count} успешно, '
+                        f'{error_count} с ошибками'
+                    )
                 )
+
         except FileNotFoundError:
             self.stdout.write(
                 self.style.WARNING('Файл genre_title.csv не найден')
             )
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f'Ошибка при импорте связей жанров: {e}')
+                self.style.ERROR(f'Ошибка при импорте связей: {e}')
             )
 
     def handle(self, *args, **options) -> None:
