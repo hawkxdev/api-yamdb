@@ -2,9 +2,32 @@
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import (
+    MaxValueValidator, MinValueValidator, ValidationError
+)
 from django.db import models
 from django.utils import timezone
+
+
+TITLE_NAME_MAX_LENGTH = 256
+CATEGORY_NAME_MAX_LENGTH = 256
+CATEGORY_SLUG_MAX_LENGTH = 50
+GENRE_NAME_MAX_LENGTH = 256
+GENRE_SLUG_MAX_LENGTH = 50
+
+MIN_SCORE = 1
+MAX_SCORE = 10
+
+TEXT_PREVIEW_LENGTH = 30
+
+
+def current_year_max_validator(value):
+    """Валидатор максимального года."""
+    current_year = timezone.now().year
+    if value > current_year:
+        raise ValidationError(
+            f"Год не может быть больше {current_year}."
+        )
 
 
 class User(AbstractUser):
@@ -67,12 +90,12 @@ class Category(models.Model):
     """Категория произведений."""
 
     name = models.CharField(
-        max_length=256,
+        max_length=CATEGORY_NAME_MAX_LENGTH,
         verbose_name='Название категории',
         help_text='Укажите название категории (например, "Фильмы")'
     )
     slug = models.SlugField(
-        max_length=50,
+        max_length=CATEGORY_SLUG_MAX_LENGTH,
         unique=True,
         verbose_name='Slug категории',
         help_text=('Укажите уникальный slug для категории. '
@@ -94,12 +117,12 @@ class Genre(models.Model):
     """Жанр произведений."""
 
     name = models.CharField(
-        max_length=256,
+        max_length=GENRE_NAME_MAX_LENGTH,
         verbose_name='Название жанра',
         help_text='Укажите название жанра (например, "Комедия")'
     )
     slug = models.SlugField(
-        max_length=50,
+        max_length=GENRE_SLUG_MAX_LENGTH,
         unique=True,
         verbose_name='Slug жанра',
         help_text=('Укажите уникальный slug для жанра. '
@@ -140,16 +163,13 @@ class TitleManager(models.Manager):
 class Title(models.Model):
     """Произведение искусства."""
 
-    NAME_MAX_LENGTH = 256
-
     name = models.CharField(
-        max_length=NAME_MAX_LENGTH,
+        max_length=TITLE_NAME_MAX_LENGTH,
         verbose_name='Название произведения'
     )
     year = models.IntegerField(
         verbose_name='Год выпуска',
-        validators=[MinValueValidator(0),
-                    MaxValueValidator(timezone.now().year)]
+        validators=[MinValueValidator(0), current_year_max_validator]
     )
     description = models.TextField(
         verbose_name='Описание произведения',
@@ -221,7 +241,7 @@ class Review(models.Model):
         ordering = ('-pub_date',)
 
     def __str__(self) -> str:
-        return f'Отзыв: {self.text[:30]}...'
+        return f'Отзыв: {self.text[:TEXT_PREVIEW_LENGTH]}...'
 
 
 class Comment(models.Model):
@@ -250,4 +270,4 @@ class Comment(models.Model):
         ordering = ('-pub_date',)
 
     def __str__(self) -> str:
-        return self.text[:30]
+        return self.text[:TEXT_PREVIEW_LENGTH]
