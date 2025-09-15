@@ -4,6 +4,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+DEFAULT_PAGE_SIZE = 20
+JWT_ACCESS_TOKEN_DAYS = 1
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
@@ -109,11 +112,11 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend'  # ← Добавить
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 20,
+    'PAGE_SIZE': DEFAULT_PAGE_SIZE,
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=JWT_ACCESS_TOKEN_DAYS),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 

@@ -5,11 +5,17 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.models import (
+    Category, Comment, Genre, Review, Title,
+    MIN_SCORE, MAX_SCORE
+)
 
 User = get_user_model()
 
 USERNAME_PATTERN = r'^[\w.@+-]+\Z'
+
+EMAIL_MAX_LENGTH = 254
+USERNAME_MAX_LENGTH = 150
 USERNAME_ERROR = (
     'Username может содержать только буквы, '
     'цифры и символы @, ., +, -, _'
@@ -110,8 +116,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate_score(self, value: int) -> int:
         """Валидация оценки."""
-        if not (1 <= value <= 10):
-            raise serializers.ValidationError('Оценка должна быть от 1 до 10.')
+        if not (MIN_SCORE <= value <= MAX_SCORE):
+            raise serializers.ValidationError(
+                f'Оценка должна быть от {MIN_SCORE} до {MAX_SCORE}.'
+            )
         return value
 
     def validate(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -143,8 +151,8 @@ class CommentSerializer(serializers.ModelSerializer):
 class SignUpSerializer(serializers.Serializer):
     """Регистрация пользователя."""
 
-    email = serializers.EmailField(max_length=254)
-    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField(max_length=EMAIL_MAX_LENGTH)
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH)
 
     def validate_username(self, value: str) -> str:
         """Валидация username."""
@@ -175,7 +183,7 @@ class SignUpSerializer(serializers.Serializer):
 class TokenSerializer(serializers.Serializer):
     """Получение JWT токена."""
 
-    username = serializers.CharField(max_length=150)
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH)
     confirmation_code = serializers.CharField(write_only=True)
 
     def validate_username(self, value: str) -> str:

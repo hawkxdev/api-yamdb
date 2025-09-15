@@ -74,14 +74,6 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleCreateSerializer
         return TitleSerializer
 
-    def get_queryset(self) -> QuerySet:
-        """Фильтрация произведений с аннотацией рейтинга."""
-        queryset = Title.objects.with_rating()
-
-        queryset = self.filter_queryset(queryset)
-
-        return queryset
-
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """Управление отзывами."""
