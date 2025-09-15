@@ -2,10 +2,6 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-# Константы конфигурации
-DEFAULT_PAGE_SIZE = 20
-JWT_ACCESS_TOKEN_DAYS = 1
-
 from dotenv import load_dotenv
 
 DEFAULT_PAGE_SIZE = 20
